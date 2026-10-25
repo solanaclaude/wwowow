@@ -47,7 +47,10 @@ const col = (h) => new THREE.Color(h);
 const W = 1080, H = 1920;
 const canvas = document.getElementById("welt-canvas");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(1);
+// Supersampling: intern doppelte Auflösung, der Browser verkleinert auf 1080×1920.
+// Glattere Kanten, weniger Flimmern – TikToks Kompression zerstört dann weniger.
+const SS = 2;
+renderer.setPixelRatio(SS);
 renderer.setSize(W, H, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -70,7 +73,11 @@ const sky = new THREE.Mesh(
     fog: false,
     vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
     fragmentShader: `uniform vec3 top; uniform vec3 bottom; varying vec3 vP;
-      void main(){ float h = smoothstep(-0.05, 0.45, vP.y); gl_FragColor = vec4(mix(bottom, top, h), 1.0);
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      void main(){ float h = smoothstep(-0.05, 0.45, vP.y);
+        // feines Dithering gegen Farbstreifen im Verlauf
+        vec3 c = mix(bottom, top, h) + (hash(gl_FragCoord.xy) - 0.5) / 128.0;
+        gl_FragColor = vec4(c, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
       }`,
@@ -82,7 +89,7 @@ const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffffff, 2);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(4096, 4096);
 Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 120 });
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.03;

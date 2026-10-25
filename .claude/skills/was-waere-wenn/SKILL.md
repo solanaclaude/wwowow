@@ -27,7 +27,8 @@ Den genauen Look beschreibt [references/stil.md](references/stil.md). Lies die D
    für den neuen Ort umbauen und die Texte ersetzen.
 5. **Prüfen:** `hyperframes lint`, dann `hyperframes snapshot --at …` an jedem Beat und das
    Kontaktbild ansehen. Erst rendern, wenn jeder Beat stimmt. Danach `hyperframes check` (Kontrast!).
-6. **Rendern:** `hyperframes render -o renders/<kurzname>.mp4` (30 s ≈ 8 min mit Software-GPU).
+6. **Rendern:** erst eine fast verlustfreie Vorlage `hyperframes render --crf 10 -o <scratchpad>/master.mp4`
+   (30 s ≈ 20 min mit Supersampling, im Hintergrund laufen lassen), dann den TikTok-Export (Abschnitt unten).
    Fertiges MP4 per Kontaktbild (`ffmpeg … fps=1/2.5,tile=6x2`) kontrollieren und dem Creator schicken.
 7. Committen und auf den Arbeits-Branch pushen.
 
@@ -103,6 +104,26 @@ dieser Umgebung gesperrt, deshalb:
 - Nach dem Rendern: `hyperframes audio renders/<name>.mp4` prüfen, dann die Lautheit für TikTok anheben:
   `ffmpeg -i in.mp4 -c:v copy -af "loudnorm=I=-14:TP=-1.2:LRA=11" -c:a aac -b:a 192k -movflags +faststart out.mp4`
   (Ziel: -16 bis -14 LUFS, True Peak ≤ -1 dBTP).
+
+## TikTok-Qualität
+
+TikTok komprimiert jedes Video neu. Feine, flimmernde Details und Farbverläufe leiden am meisten. Deshalb:
+
+- **Supersampling:** `welt.js` rendert mit `renderer.setPixelRatio(2)` (intern 2160×3840) und der
+  Browser verkleinert auf 1080×1920. So gibt es keine Treppenkanten und kein Flimmern.
+  Schattenkarte 4096.
+- **Dithering** im Himmels-Shader (±1/128) gegen Farbstreifen in dunklen Verläufen.
+- Keine winzigen, kontrastreichen Details, die sich bewegen. Schrift nicht unter ~24 px.
+- **Export aus der Vorlage** (eine Datei, Ton gleich mit normalisiert):
+  `ffmpeg -i master.mp4 -c:v libx264 -preset slow -tune animation -crf 14 -maxrate 16M -bufsize 32M
+  -profile:v high -level 4.2 -pix_fmt yuv420p -r 30 -g 60 -colorspace bt709 -color_primaries bt709
+  -color_trc bt709 -af "loudnorm=I=-14:TP=-1.2:LRA=11" -c:a aac -b:a 192k -ar 48000
+  -movflags +faststart renders/<name>.mp4`
+- **Tipps zum Hochladen für den Creator:** Originaldatei hochladen (nicht über WhatsApp oder
+  Telegram schicken, nicht per Bildschirmaufnahme). In TikTok „Hochladen in hoher Qualität“
+  einschalten (beim Posten unter „Mehr Optionen“) und „Datensparmodus“ ausschalten. Über WLAN
+  hochladen, alternativ über tiktok.com/upload am Computer. Direkt nach dem Posten ist die Qualität
+  oft schlechter. TikTok liefert die HD-Fassung nach einigen Minuten nach.
 
 ## Checkliste vor dem Abgeben
 
