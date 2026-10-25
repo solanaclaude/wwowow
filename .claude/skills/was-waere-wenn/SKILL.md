@@ -75,9 +75,30 @@ Tafel in der Szene (Börsenkurs, „VERSUCH 12.045: FEHLGESCHLAGEN“), aber die
   Host-ID = `data-composition-id` = Timeline-Key. Ein- und Ausblenden per GSAP auf dem inneren Element.
 - Lesbarkeit: Die Vignette in `index.html` hat ein dunkles Band hinter Zähler und Untertiteln, damit
   `hyperframes check` den Kontrast besteht, ohne dass Kästen nötig sind.
-- Ton: Kein Ton im MP4, außer der Creator will es. Musik/Sound wählt der Creator in TikTok
-  (Trend-Sounds). Die Warnung `film_silent` ist deshalb gewollt.
+- **Ton ist Pflicht.** Jedes Video bekommt Geräusche (siehe Abschnitt „Ton“ unten).
 - Keinen TikTok-Wasserzeichen-Text einbauen – das setzt TikTok selbst.
+
+## Ton
+
+Der Creator will **immer Geräusche im Video**. Netz-Quellen für Sounds (Openverse, Freesound) sind in
+dieser Umgebung gesperrt, deshalb:
+
+- **Umgebung und Effekte per Code** mit `scripts/geraeusche.py` (numpy/scipy, geseedet):
+  `traffic`, `crowd`, `horn`, `wind`, `leaves`, `crickets`, `birds`, `flies`, `hum`, `power_down`,
+  `relay_tick`, `shutter`, `thud` und `pad` (ruhiger Klangteppich aus Akkorden, ein Akkord pro Phase).
+  Pro Video ein `ton.py` im Projekt (Vorlage: `videos/01-niemand-arbeitet/ton.py`), das je Ebene eine
+  Datei nach `assets/audio/` schreibt; danach mit ffmpeg nach MP3 wandeln.
+- **Fertige Effekte** aus der HyperFrames-Bibliothek (Pixabay-Lizenz, frei):
+  `node_modules/hyperframes/dist/skills/media-use/audio/assets/sfx/` – whoosh, whoosh-cinematic,
+  impact-bass-1/2, riser, click(-soft), pop, glitch … Den Peak mit `hyperframes audio <datei>` messen und
+  so platzieren, dass er einen Frame nach dem Bild-Ereignis liegt.
+- Aufbau: Klangteppich über alles (Lautstärke ~0,4) + eine Umgebungs-Ebene pro Phase
+  (Stadt, Stille/Wind, Nacht, Natur …) + Effekte nur auf sichtbaren Aktionen (Rollladen, Müllsack,
+  Stromausfall, Lichtschalter, Abspann-Whoosh). Jede Ebene ist ein eigenes `<audio id=… class="clip">`
+  in `index.html` mit `data-start`, `data-duration`, `data-volume`.
+- Nach dem Rendern: `hyperframes audio renders/<name>.mp4` prüfen, dann die Lautheit für TikTok anheben:
+  `ffmpeg -i in.mp4 -c:v copy -af "loudnorm=I=-15:TP=-1.2:LRA=11" -c:a aac -b:a 192k out.mp4`
+  (Ziel: -16 bis -14 LUFS, True Peak ≤ -1 dBTP).
 
 ## Checkliste vor dem Abgeben
 
@@ -87,3 +108,4 @@ Tafel in der Szene (Börsenkurs, „VERSUCH 12.045: FEHLGESCHLAGEN“), aber die
 - [ ] Alle Texte deutsch, keine Tippfehler, in der Zone 168–1330 px (TikTok-UI unten/rechts frei).
 - [ ] `hyperframes check`: 0 Fehler, Kontrast bestanden.
 - [ ] MP4: 1080×1920, 30 fps, richtige Länge; Kontaktbild angesehen.
+- [ ] Ton vorhanden, Lautheit -16 bis -14 LUFS, Effekte liegen auf den Bild-Ereignissen.
