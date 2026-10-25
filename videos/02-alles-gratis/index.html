@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="de" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      // Die 3D-Welt lädt als Modul; HyperFrames wartet auf dieses Versprechen.
+      window.__hf = window.__hf || {};
+      window.__hf.buildReady = window.__hf.buildReady || {};
+      window.__hf.buildReady.welt = new Promise((resolve) => (window.__weltReady = resolve));
+      window.addEventListener("hf-seek", (e) => (window.__weltLastSeek = e.detail.time));
+    </script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #111111;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: #111111;
+      }
+      #welt {
+        position: absolute;
+        inset: 0;
+      }
+      #welt-canvas {
+        width: 1080px;
+        height: 1920px;
+        display: block;
+      }
+      #vignette {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse 85% 70% at 50% 45%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.38) 100%),
+          linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 18%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.3) 44%, rgba(0, 0, 0, 0.34) 52%, rgba(0, 0, 0, 0.3) 66%, rgba(0, 0, 0, 0.12) 74%, rgba(0, 0, 0, 0.3) 100%);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- 3D-Welt (Three.js, gezeichnet aus der Zeit) -->
+      <div id="welt" class="clip" data-start="0" data-duration="26.5" data-track-index="0" style="z-index: 1">
+        <canvas id="welt-canvas" width="1080" height="1920"></canvas>
+      </div>
+      <div id="vignette" class="clip" data-start="0" data-duration="26.5" data-track-index="1" data-layout-ignore style="z-index: 2"></div>
+
+      <div
+        id="hook"
+        data-composition-id="hook"
+        data-composition-src="compositions/hook.html"
+        data-start="0"
+        data-duration="2.6"
+        data-track-index="2"
+        data-track-kind="graphics"
+        data-width="1080"
+        data-height="1920"
+        style="z-index: 3"
+      ></div>
+      <div
+        id="zaehler"
+        data-composition-id="zaehler"
+        data-composition-src="compositions/zaehler.html"
+        data-start="2.5"
+        data-duration="24"
+        data-track-index="3"
+        data-track-kind="graphics"
+        data-width="1080"
+        data-height="1920"
+        style="z-index: 4"
+      ></div>
+      <div
+        id="untertitel"
+        data-composition-id="untertitel"
+        data-composition-src="compositions/untertitel.html"
+        data-start="2.5"
+        data-duration="24"
+        data-track-index="4"
+        data-track-kind="captions"
+        data-width="1080"
+        data-height="1920"
+        style="z-index: 5"
+      ></div>
+      <div
+        id="abspann"
+        data-composition-id="abspann"
+        data-composition-src="compositions/abspann.html"
+        data-start="26.5"
+        data-duration="3.5"
+        data-track-index="5"
+        data-track-kind="graphics"
+        data-width="1080"
+        data-height="1920"
+        style="z-index: 6"
+      ></div>
+
+      <!-- Ton: Klangteppich, Umgebung pro Phase, Effekte auf sichtbaren Aktionen (erzeugt mit ton.py) -->
+      <audio id="ton-musik" class="clip" src="assets/audio/musik.mp3" data-start="0" data-duration="30" data-track-index="10" data-volume="0.22"></audio>
+      <audio id="ton-nacht1" class="clip" src="assets/audio/nacht1.mp3" data-start="0" data-duration="6" data-track-index="11" data-volume="0.7"></audio>
+      <audio id="ton-klappen1" class="clip" src="assets/audio/klappen.mp3" data-start="5.48" data-duration="0.5" data-track-index="12" data-volume="0.9"></audio>
+      <audio id="ton-whoosh" class="clip" src="assets/audio/whoosh.mp3" data-start="5.39" data-duration="0.6" data-track-index="13" data-volume="0.5"></audio>
+      <audio id="ton-glocke" class="clip" src="assets/audio/glocke.mp3" data-start="5.45" data-duration="5" data-track-index="14" data-volume="0.55"></audio>
+      <audio id="ton-jubel" class="clip" src="assets/audio/jubel.mp3" data-start="5.8" data-duration="3" data-track-index="15" data-volume="0.8"></audio>
+      <audio id="ton-menge" class="clip" src="assets/audio/menge.mp3" data-start="8.3" data-duration="6.5" data-track-index="16" data-volume="0.8"></audio>
+      <audio id="ton-pop" class="clip" src="assets/audio/pop.mp3" data-start="9.45" data-duration="0.7" data-track-index="17" data-volume="0.35"></audio>
+      <audio id="ton-kisten" class="clip" src="assets/audio/kisten.mp3" data-start="11.6" data-duration="5.4" data-track-index="18" data-volume="0.8"></audio>
+      <audio id="ton-nachmittag" class="clip" src="assets/audio/nachmittag.mp3" data-start="14.5" data-duration="3.3" data-track-index="19" data-volume="0.6"></audio>
+      <audio id="ton-stau" class="clip" src="assets/audio/stau.mp3" data-start="17.4" data-duration="3.3" data-track-index="20" data-volume="0.8"></audio>
+      <audio id="ton-nacht2" class="clip" src="assets/audio/nacht2.mp3" data-start="20.4" data-duration="3.3" data-track-index="21" data-volume="0.55"></audio>
+      <audio id="ton-ende" class="clip" src="assets/audio/ende.mp3" data-start="23.4" data-duration="3.3" data-track-index="22" data-volume="0.6"></audio>
+      <audio id="ton-klappen2" class="clip" src="assets/audio/klappen.mp3" data-start="23.48" data-duration="0.5" data-track-index="23" data-volume="0.9"></audio>
+      <audio id="ton-abspann" class="clip" src="assets/audio/whoosh-short.mp3" data-start="26.35" data-duration="0.6" data-track-index="24" data-volume="0.6"></audio>
+    </div>
+    <script type="module" src="assets/welt.js"></script>
+    <script id="zaehler-uhr">
+      // Zähler "Menschen bei der Arbeit": reine Funktion der Video-Zeit t (Sekunden)
+      (function () {
+        // [Zeit, Wert] – dazwischen weich interpoliert, plus kleines Ticken
+        const keys = [
+          [2.5, 4812], [5.5, 4851], [8.5, 61000], [11.5, 480000], [14.5, 1130000],
+          [17.5, 640000], [20.5, 210000], [23.5, 9000], [26.5, 1204],
+        ];
+        const days = [
+          [0, "23:59 Uhr"], [5.5, "00:00 Uhr"], [8.5, "06:00 Uhr"], [11.5, "10:00 Uhr"],
+          [14.5, "14:00 Uhr"], [17.5, "18:00 Uhr"], [20.5, "23:00 Uhr"], [23.5, "00:00 Uhr"],
+        ];
+        function value(t) {
+          if (t <= keys[0][0]) return keys[0][1];
+          for (let i = 0; i < keys.length - 1; i++) {
+            const [t0, v0] = keys[i], [t1, v1] = keys[i + 1];
+            if (t < t1) {
+              const u = (t - t0) / (t1 - t0);
+              const e = u * u * (3 - 2 * u);
+              return v0 + (v1 - v0) * e + Math.sin(t * 37) * Math.min(v0, v1) * 0.0004;
+            }
+          }
+          return keys[keys.length - 1][1];
+        }
+        function draw(t) {
+          const num = document.getElementById("z-num");
+          const sub = document.getElementById("z-sub");
+          if (!num || !sub) return;
+          num.textContent = Math.round(value(t)).toLocaleString("de-DE");
+          let s = days[0][1];
+          for (const [at, label] of days) if (t >= at) s = label;
+          sub.textContent = s;
+        }
+        window.addEventListener("hf-seek", (e) => draw(e.detail.time));
+      })();
+    </script>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

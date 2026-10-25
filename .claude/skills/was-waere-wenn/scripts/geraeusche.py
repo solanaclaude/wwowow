@@ -345,3 +345,64 @@ def pad(chords, total, bright=900, xf=1.2, cut=170):
         n = min(len(seg), len(out) - i0)
         out[i0 : i0 + n] += seg[:n]
     return reverb(stereo(hp(out, cut, 2)), 3.0, 0.55)
+
+
+# ---------- weitere Bausteine (ab Video 2) ----------
+def bell(dur=4.0, f=392.0, seed=0):
+    """Kirchenglocke: unharmonische Teiltöne, langer Nachhall."""
+    t = t_axis(dur)
+    partials = [(0.5, 0.6, 1.2), (1.0, 1.0, 1.6), (1.19, 0.5, 2.2), (1.5, 0.45, 2.6), (2.0, 0.35, 3.2), (2.52, 0.2, 4.0), (3.0, 0.15, 5.0)]
+    x = sum(a * np.sin(2 * np.pi * f * r * t + seed) * np.exp(-t * d) for r, a, d in partials)
+    strike = bp(white(0.05, 900 + seed), 1500, 6000) * np.exp(-t_axis(0.05) * 80)
+    x[: len(strike)] += strike * 0.6
+    return reverb(stereo(x * 0.5), 2.6, 0.45)
+
+
+def cheer(dur=3.0, seed=101):
+    """Jubel einer Menge: viele Stimmen + Pfiffe, schwillt an und ab."""
+    r = rng(seed)
+    base = crowd(dur, voices=16, seed=seed) * 1.4
+    t = t_axis(dur)
+    out = base * (np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 0.6)[:, None]
+    for _ in range(4):  # Pfiffe
+        L = r.uniform(0.3, 0.6)
+        tt = t_axis(L)
+        f = r.uniform(1800, 2600) * (1 + 0.25 * np.sin(np.pi * tt / L))
+        w = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * tt / L)
+        out = place(out, reverb(stereo(w * 0.25, r.uniform(-0.7, 0.7)), 1.2, 0.4), r.uniform(0.2, dur - 0.8))
+    return out
+
+
+def engines(dur, n=6, seed=111):
+    """Stehende Autos mit laufendem Motor (Stau)."""
+    r = rng(seed)
+    t = t_axis(dur)
+    out = np.zeros((len(t), 2))
+    for i in range(n):
+        f = r.uniform(28, 40) * (1 + 0.02 * np.sin(2 * np.pi * r.uniform(0.3, 0.8) * t))
+        ph = 2 * np.pi * np.cumsum(f) / SR
+        x = sum(np.sin(ph * k) / k for k in range(1, 12)) * (1 + 0.3 * np.sin(ph * 0.5))
+        out += stereo(bp(x, 120, 900, 2) * r.uniform(0.4, 1.0), r.uniform(-0.8, 0.8))
+    return out
+
+
+def honks(dur, n=8, seed=121):
+    """Viele genervte Hupen durcheinander."""
+    r = rng(seed)
+    out = np.zeros((int(dur * SR), 2))
+    for _ in range(n):
+        f1 = r.uniform(300, 480)
+        h = horn((f1, f1 * r.choice([1.25, 1.2, 1.33])), r.uniform(0.2, 0.7))
+        out = place(out, h * r.uniform(0.4, 1.0), r.uniform(0, dur - 0.5))
+    return out
+
+
+def flip(seed=0):
+    """Mechanisches Umklappen einer Anzeige (Preisschild/Tafel)."""
+    out = silence(0.4)
+    r = rng(130 + seed)
+    for k in range(5):
+        L = 0.02
+        c = bp(white(L, 140 + seed * 10 + k), 1200, 5000) * np.exp(-t_axis(L) * 160)
+        out = place(out, stereo(c * r.uniform(0.6, 1.0)), k * 0.035)
+    return out

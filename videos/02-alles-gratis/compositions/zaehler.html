@@ -1,0 +1,52 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    #z-box {
+      position: absolute;
+      left: 60px;
+      top: 860px;
+      color: #ffffff;
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    #z-label,
+    #z-sub {
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 26px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    #z-num {
+      font-family: "EB Garamond", serif;
+      font-weight: 400;
+      font-size: 76px;
+      line-height: 1.02;
+      margin: 6px 0 10px;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    #z-sub {
+      font-size: 24px;
+      opacity: 0.9;
+    }
+  </style>
+  <div id="root" data-composition-id="zaehler" data-width="1080" data-height="1920">
+    <div id="z-box" class="clip" data-start="0" data-duration="24">
+      <div id="z-inner">
+        <div id="z-label" data-layout-ignore>Menschen in der Innenstadt</div>
+        <div id="z-num">4.812</div>
+        <div id="z-sub" data-layout-ignore>23:59 Uhr</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Die Zahl und der Tag werden in index.html aus der Video-Zeit gesetzt (siehe "zaehler-uhr").
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#z-inner", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 0);
+    // die "1" bekommt einen kleinen warmen Akzent
+        tl.to("#z-inner", { opacity: 0, duration: 0.4, ease: "power2.in" }, 23.55);
+    window.__timelines["zaehler"] = tl;
+  </script>
+</template>
