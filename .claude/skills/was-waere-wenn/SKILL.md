@@ -1,0 +1,89 @@
+---
+name: was-waere-wenn
+description: Erstellt TikTok-Videos im Stil "Was wäre, wenn …?" (wie @meanwhileanimations) komplett im Code mit HyperFrames + Three.js – immer auf Deutsch, hochkant 9:16. Verwenden, sobald der Creator ein neues Video, ein neues "Was wäre wenn"-Thema, eine Szene, ein Skript oder eine Änderung an einem bestehenden Video in diesem Repo will.
+---
+
+# „Was wäre, wenn …?“ – TikTok-Videos im Code
+
+Der Creator macht TikToks in der Nische **„Was wäre, wenn …?“**. Vorbild sind die Videos von
+@meanwhileanimations („What if every woman disappeared?“, „What if Earth got colder every day?“).
+Jedes Video wird **vollständig im Code** gebaut: HyperFrames (HTML → MP4) für Zeitachse und Text,
+Three.js für die stilisierte 3D-Welt. **Alle Texte immer auf Deutsch.**
+
+Referenz-Umsetzung, an der du dich orientierst und die du als Vorlage kopierst:
+`videos/01-niemand-arbeitet/` (30 s, „Was wäre, wenn niemand mehr arbeiten geht?“).
+Den genauen Look beschreibt [references/stil.md](references/stil.md). Lies die Datei vor jedem neuen Video.
+
+## Ablauf für ein neues Video
+
+1. **Thema und Länge klären.** Fehlt die Länge, nimm 30 s. Lang darf es bis ca. 120 s sein.
+2. **Beats schreiben** (siehe Dramaturgie unten): Hook-Frage, Normalzustand, 5–7 Eskalationsstufen mit
+   Zeitsprung und je einem kurzen, möglichst echten Fakt, Wendepunkt/emotionaler Schluss, Abspann.
+   Zahlen und Fakten plausibel halten; im Abspann steht ein echter, überprüfbarer Fakt.
+3. **Einen Ort wählen**, der das ganze Video trägt (Straßenkreuzung, Park, Wohnzimmer, Strand …).
+   Die Kamera bleibt dort; nur der **Zustand der Welt** ändert sich mit der Zeit.
+4. **Projekt anlegen:** `videos/<NN>-<kurzname>/` als Kopie der Referenz anlegen (index.html,
+   compositions/, assets/vendor/, package.json, hyperframes.json, meta.json), dann `assets/welt.js`
+   für den neuen Ort umbauen und die Texte ersetzen.
+5. **Prüfen:** `hyperframes lint`, dann `hyperframes snapshot --at …` an jedem Beat und das
+   Kontaktbild ansehen. Erst rendern, wenn jeder Beat stimmt. Danach `hyperframes check` (Kontrast!).
+6. **Rendern:** `hyperframes render -o renders/<kurzname>.mp4` (30 s ≈ 8 min mit Software-GPU).
+   Fertiges MP4 per Kontaktbild (`ffmpeg … fps=1/2.5,tile=6x2`) kontrollieren und dem Creator schicken.
+7. Committen und auf den Arbeits-Branch pushen.
+
+## Dramaturgie (immer gleich)
+
+| Teil | Dauer (30 s) | Inhalt |
+| --- | --- | --- |
+| Hook | 0–2,5 s | Frage mittig in Serifenschrift, schon in Frame 0 sichtbar (= Thumbnail). Lebendige Weitwinkel-Szene. |
+| Normalzustand | ~3 s | Zähler blendet ein, Zahl tickt live. Untertitel stellt die Welt vor („Montag, 8 Uhr. …“). |
+| Auslöser | ~3 s | Das Was-wäre-wenn passiert. Zähler stürzt ab / springt. |
+| Eskalation | 4–6 × ~3 s | Je Stufe ein Zeitsprung (Tag 1 → Tag 3 → Tag 7 → Tag 12 → Tag 60 …), ein sichtbarer Zustandswechsel in der Welt und ein kurzer Untertitel. Lichtstimmung kippt (warm → grau → Nacht/Rot → …). |
+| Schluss | ~3 s | Emotionaler oder überraschender Moment (letzter Mensch, ein Licht geht an, ein Foto …). Kamera fährt langsam darauf zu. |
+| Abspann | 3,5 s | Schwarz (#131313): Frage in Serifenschrift, darunter echter Fakt in Mono-Großbuchstaben, Teilen-Pfeil, unterstrichener Aufruf „Teile das mit jemandem, der …“. |
+
+Bei längeren Videos (60–120 s): mehr Eskalationsstufen, gelegentlich einen zweiten Zähler oder eine
+Tafel in der Szene (Börsenkurs, „VERSUCH 12.045: FEHLGESCHLAGEN“), aber dieselbe Struktur.
+
+## Texte auf Deutsch
+
+- Hook und Abspann-Frage: „Was wäre, wenn …?“ – kurz, umgangssprachlich, max. 2 Zeilen.
+- Untertitel: 1–2 kurze Sätze, max. ca. 6 Wörter pro Zeile, Präsens, nüchtern-dramatisch.
+  Gut: „Niemand holt den Müll ab.“ „Der Strom fällt aus.“ Schlecht: lange Erklärsätze.
+- Zähler-Label in Großbuchstaben („MENSCHEN BEI DER ARBEIT“, „TEMPERATUR“, „WELTBEVÖLKERUNG“),
+  Zahl mit deutschem Tausenderpunkt (`toLocaleString("de-DE")`), darunter Zeitangabe („TAG 7“).
+- Umlaute und ß korrekt schreiben, keine Anglizismen, wenn es ein gutes deutsches Wort gibt.
+
+## Technik (HyperFrames + Three.js) – was sich bewährt hat
+
+- Format 1080×1920, 30 fps. CLI: `npx hyperframes@0.8.197 …` (oder lokal installiert).
+  Einmalig: `npx hyperframes browser ensure` lädt den Render-Browser.
+- **Keine CDNs:** `gsap.min.js` und `three.module.min.js` liegen in `assets/vendor/`
+  (das CDN ist in dieser Umgebung teilweise gesperrt).
+- Die 3D-Welt ist ein `<canvas>` im Root (`#welt`, Clip über die Szenendauer), geladen als
+  `<script type="module" src="assets/welt.js">`. Im `<head>` wird
+  `window.__hf.buildReady.welt` als Promise angelegt; `welt.js` löst es nach dem ersten Render auf.
+- `welt.js` zeichnet **nur aus der Zeit**: `window.addEventListener("hf-seek", e => render(e.detail.time))`.
+  Kein `Math.random()` (geseedeter mulberry32), kein `requestAnimationFrame`, keine Uhrzeit.
+  Muster für Abläufe: jedes Objekt bekommt beim Aufbau eine feste Startzeit (`userData.t`) und ist ab
+  dann sichtbar/wächst (`smooth(t0, t0+0.9, t)`). Lichtstimmungen als Keyframe-Liste, dazwischen
+  weich überblenden. Kamera als Keyframes mit linearer, langsamer Fahrt.
+- **Zähler:** Zahl und Tag werden von einem Skript in `index.html` aus `hf-seek` gesetzt
+  (`#zaehler-uhr`). GSAP-`onUpdate` und `hf-seek`-Listener **in** Sub-Kompositionen haben beim
+  Rendern nicht zuverlässig gefeuert.
+- Texte als Sub-Kompositionen in `compositions/` (`hook`, `zaehler`, `untertitel`, `abspann`);
+  Host-ID = `data-composition-id` = Timeline-Key. Ein- und Ausblenden per GSAP auf dem inneren Element.
+- Lesbarkeit: Die Vignette in `index.html` hat ein dunkles Band hinter Zähler und Untertiteln, damit
+  `hyperframes check` den Kontrast besteht, ohne dass Kästen nötig sind.
+- Ton: Kein Ton im MP4, außer der Creator will es. Musik/Sound wählt der Creator in TikTok
+  (Trend-Sounds). Die Warnung `film_silent` ist deshalb gewollt.
+- Keinen TikTok-Wasserzeichen-Text einbauen – das setzt TikTok selbst.
+
+## Checkliste vor dem Abgeben
+
+- [ ] Frame 0 zeigt die Hook-Frage über einer lebendigen Szene.
+- [ ] Jeder Beat hat einen **sichtbaren** Zustandswechsel in der Welt, nicht nur neuen Text.
+- [ ] Zähler läuft (Snapshot an zwei Zeiten vergleichen) und springt passend zur Geschichte.
+- [ ] Alle Texte deutsch, keine Tippfehler, in der Zone 168–1330 px (TikTok-UI unten/rechts frei).
+- [ ] `hyperframes check`: 0 Fehler, Kontrast bestanden.
+- [ ] MP4: 1080×1920, 30 fps, richtige Länge; Kontaktbild angesehen.
