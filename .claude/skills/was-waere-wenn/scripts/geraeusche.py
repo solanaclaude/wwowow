@@ -131,6 +131,11 @@ def mix(*layers):
     return out
 
 
+def phone(x, cut=140):
+    """Entfernt Tiefbass, den Handy-Lautsprecher nicht wiedergeben (spart Lautheit für Hörbares)."""
+    return hp(x, cut, 2)
+
+
 def write(path, x, peak=0.89):
     if x.ndim == 1:
         x = stereo(x)
@@ -142,7 +147,7 @@ def write(path, x, peak=0.89):
 def traffic(dur, passes=None, seed=11):
     """Stadtverkehr: tiefes Grollen + vorbeifahrende Autos (mit Doppler-Gefühl)."""
     r = rng(seed)
-    base = lp(brown(dur, seed), 220) * 0.9 + bp(white(dur, seed + 1), 300, 2500) * 0.05
+    base = bp(brown(dur, seed), 120, 400) * 0.5 + bp(white(dur, seed + 1), 400, 3000) * 0.12
     out = stereo(base * (0.75 + 0.25 * smooth_rand(dur, 0.5, seed)))
     if passes is None:
         passes = sorted(r.uniform(0, dur, int(dur * 1.1)))
@@ -153,8 +158,8 @@ def traffic(dur, passes=None, seed=11):
         nz = white(L, int(p * 1000) + 3)
         hi, lo = bp(nz, 500, 3500), bp(nz, 250, 1600)
         k = 1 / (1 + np.exp(-tt * 8))  # vorher heller, nachher dunkler
-        eng = signal.sawtooth(2 * np.pi * np.cumsum(np.where(tt < 0, 92, 74)) / SR)
-        car = (hi * (1 - k) + lo * k) * 0.55 + lp(eng, 400) * 0.25
+        eng = signal.sawtooth(2 * np.pi * np.cumsum(np.where(tt < 0, 184, 148)) / SR)
+        car = (hi * (1 - k) + lo * k) * 0.8 + bp(eng, 150, 900) * 0.3
         d = 1 if r.random() < 0.5 else -1
         out = place(out, stereo(car * e * r.uniform(0.5, 1.0), np.clip(tt * 0.8 * d, -0.9, 0.9)), p - L / 2)
     return out
@@ -185,7 +190,7 @@ def horn(f=(349, 440), dur=0.35):
 def wind(dur, strength=1.0, seed=31):
     nz = white(dur, seed)
     g = 0.35 + 0.65 * smooth_rand(dur, 0.35, seed) ** 1.5
-    low = lp(nz, 450) * g
+    low = bp(nz, 180, 900) * g
     whistle = bp(nz, 700, 1400, 2) * (g**3) * 0.25
     return stereo((low + whistle) * strength, 0.15 * np.sin(t_axis(dur) * 0.3))
 
@@ -257,7 +262,7 @@ def flies(dur, n=2, seed=61):
 
 def hum(dur, f=100):
     t = t_axis(dur)
-    x = 0.6 * np.sin(2 * np.pi * f * t) + 0.3 * np.sin(2 * np.pi * 2 * f * t) + 0.12 * np.sin(2 * np.pi * 3 * f * t)
+    x = 0.3 * np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * 2 * f * t) + 0.4 * np.sin(2 * np.pi * 3 * f * t) + 0.25 * np.sin(2 * np.pi * 5 * f * t)
     buzz = bp(white(dur, 71), 2000, 6000, 2) * 0.04 * (1 + np.sin(2 * np.pi * f * t))
     return stereo(x * 0.5 + buzz)
 
@@ -267,8 +272,8 @@ def power_down(dur=2.2, f=100):
     t = t_axis(dur)
     fr = f * np.exp(-t * 2.2) + 12
     ph = 2 * np.pi * np.cumsum(fr) / SR
-    x = (np.sin(ph) + 0.4 * np.sin(2 * ph)) * np.exp(-t * 1.6)
-    thump = np.sin(2 * np.pi * 55 * t) * np.exp(-t * 9) * 1.2
+    x = (np.sin(ph) + 0.6 * np.sin(2 * ph) + 0.5 * np.sin(3 * ph) + 0.35 * np.sin(5 * ph)) * np.exp(-t * 1.6)
+    thump = np.sin(2 * np.pi * 55 * t) * np.exp(-t * 9) * 0.6 + bp(white(dur, 75), 200, 1200) * np.exp(-t * 14) * 1.2
     click = hp(white(dur, 73), 1500) * np.exp(-t * 60) * 0.6
     return reverb(stereo(x * 0.6 + thump + click), 2.2, 0.4)
 
@@ -303,8 +308,8 @@ def thud(seed=0):
     """Müllsack fällt auf den Boden."""
     tt = t_axis(0.5)
     r = rng(500 + seed)
-    body = np.sin(2 * np.pi * r.uniform(65, 90) * tt) * np.exp(-tt * 18)
-    knock = lp(white(0.5, 600 + seed), 900) * np.exp(-tt * 30) * 0.9
+    body = np.sin(2 * np.pi * r.uniform(65, 90) * tt) * np.exp(-tt * 18) * 0.5 + bp(white(0.5, 800 + seed), 250, 1400) * np.exp(-tt * 22) * 1.3
+    knock = bp(white(0.5, 600 + seed), 300, 2500) * np.exp(-tt * 30) * 0.9
     crinkle = hp(white(0.5, 700 + seed), 3000) * np.exp(-tt * 10) * (r.random(len(tt)) > 0.97) * 0.8
     return reverb(stereo(body + knock + crinkle, r.uniform(-0.6, 0.6)), 0.9, 0.25)
 
@@ -329,7 +334,7 @@ def pad_note(f, dur, bright=900, seed=0):
     return x * (0.85 + 0.15 * np.sin(2 * np.pi * 0.2 * t + seed))
 
 
-def pad(chords, total, bright=900, xf=1.2):
+def pad(chords, total, bright=900, xf=1.2, cut=170):
     """chords: Liste von (start, ende, [Noten]) – weich übergeblendet, mit viel Hall."""
     out = np.zeros(int(total * SR))
     for i, (a, b, notes) in enumerate(chords):
@@ -339,4 +344,4 @@ def pad(chords, total, bright=900, xf=1.2):
         i0 = int(a * SR)
         n = min(len(seg), len(out) - i0)
         out[i0 : i0 + n] += seg[:n]
-    return reverb(stereo(out), 3.0, 0.55)
+    return reverb(stereo(hp(out, cut, 2)), 3.0, 0.55)

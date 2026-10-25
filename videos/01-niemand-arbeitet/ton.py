@@ -29,10 +29,10 @@ city = mix(traffic(D, passes) * 0.9, crowd(D) * 0.7)
 city = place(city, horn() * 0.5, 1.3)
 city = place(city, horn((392, 494)) * 0.35, 4.2)
 city *= gain_curve(D, [(0, 1), (5.3, 1), (6.6, 0.45), (8.0, 0.08), (9.5, 0)])
-write(p("stadt.wav"), fade(city, 0.05, 0.4))
+write(p("stadt.wav"), fade(phone(city), 0.05, 0.4))
 
 # 8,0–17,8 s: leere Straße – Wind
-write(p("leer.wav"), fade(wind(9.8, 1.0, seed=33), 1.2, 1.0))
+write(p("leer.wav"), fade(phone(wind(9.8, 1.0, seed=33)), 1.2, 1.0))
 
 # 8,5–19,6 s: Ampel blinkt gelb (Relais-Klicken, an und aus)
 D = 11.1
@@ -46,7 +46,7 @@ while k * 1.25 < 19.6:
 write(p("ampel.wav"), amp)
 
 # 8,55 s: Rollladen fährt herunter
-write(p("rollladen.wav"), shutter(0.75))
+write(p("rollladen.wav"), phone(shutter(0.75), 120))
 
 # 11,5–17,8 s: Fliegen um den Müll
 write(p("fliegen.wav"), fade(flies(6.3), 1.0, 1.2))
@@ -56,11 +56,11 @@ D = 6.0
 bags = silence(D)
 for i, (at, g) in enumerate([(0.2, 1.0), (0.62, 0.8), (1.0, 0.9), (1.45, 0.7), (1.95, 0.75), (2.6, 0.6), (3.3, 0.55), (4.1, 0.45), (5.0, 0.4)]):
     bags = place(bags, thud(i) * g, at)
-write(p("muell.wav"), bags)
+write(p("muell.wav"), phone(bags, 90))
 
 # 8,5–19,1 s: Neonröhren-Summen aus dem Supermarkt, dann Stromausfall
-write(p("summen.wav"), fade(hum(10.6), 1.5, 0.05))
-write(p("strom-aus.wav"), power_down())
+write(p("summen.wav"), fade(phone(hum(10.6), 150), 1.5, 0.05))
+write(p("strom-aus.wav"), phone(power_down(), 60))
 
 # 17,4–20,8 s: Nacht – Grillen
 write(p("nacht.wav"), fade(mix(crickets(3.4), wind(3.4, 0.35, seed=35)), 0.6, 0.5))
@@ -73,16 +73,16 @@ write(p("abend.wav"), fade(mix(crickets(3.4, n=3, seed=45) * 0.7, wind(3.4, 0.3,
 
 # 0–30 s: ruhiger Klangteppich, der die Stimmung jeder Phase trägt
 chords = [
-    (0.0, 5.4, ["A2", "E3", "B3", "C4"]),
-    (5.4, 8.5, ["F2", "C3", "A3", "E4"]),
-    (8.5, 14.5, ["A2", "E3", "C4"]),
-    (14.5, 17.5, ["D2", "A2", "F3", "C4"]),
-    (17.5, 20.5, ["E2", "B2", "D3", "F3"]),
-    (20.5, 23.5, ["C3", "G3", "D4", "E4"]),
-    (23.5, 24.4, ["A2", "E3", "C4"]),
-    (24.4, 26.5, ["F2", "C3", "A3", "E4"]),
-    (26.5, 30.0, ["C3", "G3", "E4"]),
+    (0.0, 5.4, ["A3", "E4", "B4", "C5"]),
+    (5.4, 8.5, ["F3", "C4", "A4", "E5"]),
+    (8.5, 14.5, ["A3", "E4", "C5"]),
+    (14.5, 17.5, ["D3", "A3", "F4", "C5"]),
+    (17.5, 20.5, ["E3", "B3", "D4", "F4"]),
+    (20.5, 23.5, ["C4", "G4", "D5", "E5"]),
+    (23.5, 24.4, ["A3", "E4", "C5"]),
+    (24.4, 26.5, ["F3", "C4", "A4", "E5"]),
+    (26.5, 30.0, ["C4", "G4", "E5"]),
 ]
-music = pad(chords, 30.0, bright=1100)
+music = pad(chords, 30.0, bright=2400)
 write(p("musik.wav"), fade(music, 0.8, 2.0))
 print("fertig:", sorted(os.listdir(OUT)))

@@ -96,8 +96,12 @@ dieser Umgebung gesperrt, deshalb:
   (Stadt, Stille/Wind, Nacht, Natur …) + Effekte nur auf sichtbaren Aktionen (Rollladen, Müllsack,
   Stromausfall, Lichtschalter, Abspann-Whoosh). Jede Ebene ist ein eigenes `<audio id=… class="clip">`
   in `index.html` mit `data-start`, `data-duration`, `data-volume`.
+- **Handy-Lautsprecher geben unter ~150 Hz fast nichts wieder.** Umgebungen mit `phone()` (Hochpass)
+  schreiben, Klangteppich in Oktave 3–5, kein reines Bass-Grollen. `whoosh-cinematic` und
+  `impact-bass-*` sind fast nur Bass: höchstens als einzelner Akzent. Nach dem Rendern den Bassanteil
+  messen (FFT): unter 150 Hz sollten höchstens ~30 % der Energie liegen.
 - Nach dem Rendern: `hyperframes audio renders/<name>.mp4` prüfen, dann die Lautheit für TikTok anheben:
-  `ffmpeg -i in.mp4 -c:v copy -af "loudnorm=I=-15:TP=-1.2:LRA=11" -c:a aac -b:a 192k out.mp4`
+  `ffmpeg -i in.mp4 -c:v copy -af "loudnorm=I=-14:TP=-1.2:LRA=11" -c:a aac -b:a 192k -movflags +faststart out.mp4`
   (Ziel: -16 bis -14 LUFS, True Peak ≤ -1 dBTP).
 
 ## Checkliste vor dem Abgeben
