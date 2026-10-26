@@ -98,14 +98,15 @@ Der Creator will die Qualität der Referenzvideos. Das heißt (siehe `videos/03-
 
 ## Sprecherin (Pflicht)
 
-Jedes Video bekommt eine ruhige deutsche Sprecherstimme – offline mit Piper, siehe
+Jedes Video bekommt eine **beruhigende Männerstimme** (Wunsch des Creators) – offline mit Piper, siehe
 `scripts/sprecher.py` (Einrichtung im Kopf der Datei; Stimmen liegen in
-`~/.cache/was-waere-wenn/voices/`, Standard: „kerstin“, Alternativen „ramona“, „eva_k“).
+`~/.cache/was-waere-wenn/voices/`). Standard: **„thorsten“** mit `langsam=1.32`
+(Download: `voice-de-thorsten-low.tar.gz` aus den Piper-Releases v0.0.2 auf GitHub).
 
 - Pro Video ein `stimme.py` (Vorlage: `videos/03-maenner-weg/stimme.py`): Liste aus
   (Startzeit, Satz). Der Text entspricht den Untertiteln; Zahlen als Wörter schreiben.
 - `sprich()` warnt, wenn ein Satz in den nächsten hineinläuft → Satz kürzen, Untertitel angleichen.
-  Pro 4-Sekunden-Beat höchstens ca. 8 Wörter (Sprechtempo `length_scale 1.18`).
+  Pro 4-Sekunden-Beat höchstens ca. 8–9 Wörter (Sprechtempo `langsam=1.32`).
 - Einbinden als `<audio id="ton-stimme" … data-volume="1">`; Musik dann ca. 0,14, Umgebungen
   ca. 0,3–0,5, damit die Stimme klar vorne steht.
 

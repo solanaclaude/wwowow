@@ -1,7 +1,7 @@
 """Sprecherin für "Was wäre, wenn alle Männer verschwinden würden?" → assets/audio/stimme.wav
 
 Ausführen aus dem Repo-Root:  python3 videos/03-maenner-weg/stimme.py
-Stimme: Piper "kerstin" (siehe .claude/skills/was-waere-wenn/scripts/sprecher.py für die Einrichtung).
+Stimme: Piper "thorsten" (ruhige Männerstimme) (siehe .claude/skills/was-waere-wenn/scripts/sprecher.py für die Einrichtung).
 """
 import os
 import sys
@@ -10,7 +10,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "..", ".claude", "skills", "was-waere-wenn", "scripts"))
 from sprecher import sprich  # noqa: E402
 
-MODELL = os.path.expanduser(os.environ.get("STIMME", "~/.cache/was-waere-wenn/voices/kerstin-low/de-kerstin-low.onnx"))
+MODELL = os.path.expanduser(os.environ.get("STIMME", "~/.cache/was-waere-wenn/voices/thorsten-low/de-thorsten-low.onnx"))
 
 zeilen = [
     (0.35, "Was wäre, wenn alle Männer verschwinden würden?"),
@@ -30,5 +30,5 @@ zeilen = [
     (55.2, "Die Zukunft liegt in ihren Händen."),
     (59.4, "Teile das mit einer Frau, die deine Welt bewegt."),
 ]
-for at, dur, text in sprich(zeilen, 63.0, MODELL, os.path.join(HERE, "assets", "audio", "stimme.wav")):
+for at, dur, text in sprich(zeilen, 63.0, MODELL, os.path.join(HERE, "assets", "audio", "stimme.wav"), langsam=1.32):
     print(f"{at:6.2f}s  {dur:4.2f}s  {text}")

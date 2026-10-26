@@ -6,8 +6,8 @@ an seine Startzeit gelegt, so passt die Stimme genau zu Bild und Untertitel.
 
 Einmalig:
     pip install piper-tts
-    curl -L -o kerstin.tgz https://github.com/rhasspy/piper/releases/download/v0.0.2/voice-de-kerstin-low.tar.gz
-    (andere Stimmen: voice-de-ramona-low, voice-de-eva_k-x-low, voice-de-thorsten-low)
+    mkdir -p ~/.cache/was-waere-wenn/voices/thorsten-low && curl -L https://github.com/rhasspy/piper/releases/download/v0.0.2/voice-de-thorsten-low.tar.gz | tar xz -C ~/.cache/was-waere-wenn/voices/thorsten-low
+    (Standard: ruhige Männerstimme "thorsten" mit langsam=1.32; Frauenstimmen: voice-de-kerstin-low, voice-de-ramona-low, voice-de-eva_k-x-low)
 
 Benutzung:
     from sprecher import sprich
