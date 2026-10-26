@@ -11,7 +11,8 @@ Jedes Video wird **vollständig im Code** gebaut: HyperFrames (HTML → MP4) fü
 Three.js für die stilisierte 3D-Welt. **Alle Texte immer auf Deutsch.**
 
 Referenz-Umsetzung, an der du dich orientierst und die du als Vorlage kopierst:
-`videos/01-niemand-arbeitet/` (30 s, „Was wäre, wenn niemand mehr arbeiten geht?“).
+`videos/03-maenner-weg/` (63 s, Sprecherin, große Welt, Nachbearbeitung). Ältere, einfachere
+Beispiele: `videos/01-niemand-arbeitet/`, `videos/02-alles-gratis/`.
 Den genauen Look beschreibt [references/stil.md](references/stil.md). Lies die Datei vor jedem neuen Video.
 
 ## Ablauf für ein neues Video
@@ -78,6 +79,35 @@ Tafel in der Szene (Börsenkurs, „VERSUCH 12.045: FEHLGESCHLAGEN“), aber die
   `hyperframes check` den Kontrast besteht, ohne dass Kästen nötig sind.
 - **Ton ist Pflicht.** Jedes Video bekommt Geräusche (siehe Abschnitt „Ton“ unten).
 - Keinen TikTok-Wasserzeichen-Text einbauen – das setzt TikTok selbst.
+
+## Optik wie bei den Vorbildern (Pflicht)
+
+Der Creator will die Qualität der Referenzvideos. Das heißt (siehe `videos/03-maenner-weg/assets/welt.js`):
+
+- **Große Welt, hohe Kamera:** Kamera ca. 25–30 m hoch, 45–55 m entfernt, FOV 50, Blick so weit nach
+  hinten, dass der Schauplatz im mittleren/unteren Drittel liegt und oben Park, See, Hügel und
+  Skyline im Dunst zu sehen sind. Figuren sind klein, aber durch Menge lesbar.
+- **Viel Detail drumherum:** Stadtviertel aus Gebäuden mit Fenster-Textur (nachts leuchtende
+  `emissiveMap`), Straßenraster, Park mit See (glatt, spiegelnd über `scene.environment`),
+  Hunderte Bäume als `InstancedMesh`, Grünstreifen/Hecken/Blumen im Vordergrund – keine leeren Flächen.
+- **Nachbearbeitung** über `EffectComposer` (Addons in `assets/vendor/addons/`, eingebunden per
+  Import-Map in `index.html`): `RenderPass` → `GTAOPass` (Umgebungsverdeckung) → `UnrealBloomPass`
+  (nachts stärker) → `OutputPass`. Umgebungslicht aus einem eigenen Himmels-PMREM.
+  Dunst: `THREE.Fog(…, 90, 420)`. Supersampling `SS = 1.5`.
+- Rendern dauert so deutlich länger (63 s ≈ 1–2 h). Immer im Hintergrund rendern.
+
+## Sprecherin (Pflicht)
+
+Jedes Video bekommt eine ruhige deutsche Sprecherstimme – offline mit Piper, siehe
+`scripts/sprecher.py` (Einrichtung im Kopf der Datei; Stimmen liegen in
+`~/.cache/was-waere-wenn/voices/`, Standard: „kerstin“, Alternativen „ramona“, „eva_k“).
+
+- Pro Video ein `stimme.py` (Vorlage: `videos/03-maenner-weg/stimme.py`): Liste aus
+  (Startzeit, Satz). Der Text entspricht den Untertiteln; Zahlen als Wörter schreiben.
+- `sprich()` warnt, wenn ein Satz in den nächsten hineinläuft → Satz kürzen, Untertitel angleichen.
+  Pro 4-Sekunden-Beat höchstens ca. 8 Wörter (Sprechtempo `length_scale 1.18`).
+- Einbinden als `<audio id="ton-stimme" … data-volume="1">`; Musik dann ca. 0,14, Umgebungen
+  ca. 0,3–0,5, damit die Stimme klar vorne steht.
 
 ## Ton
 
