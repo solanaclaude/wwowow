@@ -1,6 +1,11 @@
 // 3D-Welt: Rathausplatz. Alle Männer verschwinden – und die Frauen bauen die Welt weiter.
 // Alles wird nur aus der Zeit t berechnet (render(t)) – HyperFrames rendert Frames einzeln.
-import * as THREE from "./vendor/three.module.min.js";
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
 // ---------- Zeitplan (Video-Sekunden) ----------
 const T = {
@@ -50,7 +55,7 @@ const inWin = (t, a, b) => t >= a && t < b;
 const W = 1080, H = 1920;
 const canvas = document.getElementById("welt-canvas");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
-const SS = 2; // Supersampling gegen Flimmern auf TikTok
+const SS = 1.5; // Supersampling gegen Flimmern auf TikTok (mit Nachbearbeitung)
 renderer.setPixelRatio(SS);
 renderer.setSize(W, H, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -59,13 +64,13 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0xffffff, 40, 140);
-const camera = new THREE.PerspectiveCamera(58, W / H, 0.1, 400);
+scene.fog = new THREE.Fog(0xffffff, 90, 420); // Dunst in der Ferne (Luftperspektive)
+const camera = new THREE.PerspectiveCamera(50, W / H, 0.5, 900);
 
 const skyU = { top: { value: col("#7fa5d6") }, bottom: { value: col("#ffd2a1") } };
 scene.add(
   new THREE.Mesh(
-    new THREE.SphereGeometry(300, 32, 16),
+    new THREE.SphereGeometry(800, 32, 16),
     new THREE.ShaderMaterial({
       uniforms: skyU,
       side: THREE.BackSide,
@@ -88,7 +93,7 @@ scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffffff, 2);
 sun.castShadow = true;
 sun.shadow.mapSize.set(4096, 4096);
-Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 120 });
+Object.assign(sun.shadow.camera, { left: -55, right: 55, top: 55, bottom: -55, near: 1, far: 220 });
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.03;
 scene.add(sun, sun.target);
@@ -364,15 +369,7 @@ const crane = new THREE.Group();
 crane.position.set(15.2, 0, -14);
 scene.add(crane);
 
-// Skyline
-const skylineWins = [];
-for (let i = 0; i < 24; i++) {
-  const x = R(-45, 45), z = R(-42, -85), w = R(5, 11), d = R(5, 11), h = R(14, 44);
-  box(w, h, d, std(pick(["#9aa3ad", "#a8adb3", "#8d97a3", "#b3b0a8", "#7f8c99"])), x, h / 2, z, false);
-  for (let yy = 3; yy < h - 1; yy += 2.2)
-    for (let xx = -w / 2 + 0.8; xx < w / 2 - 0.5; xx += 1.4)
-      if (rnd() < 0.55) skylineWins.push({ x: x + xx, y: yy, z: z + d / 2 + 0.03, w: 0.7, h: 1.1, seed: rnd() });
-}
+const skylineWins = []; // alte Skyline entfällt (Park und Hügel übernehmen den Hintergrund)
 function makeWindows(defs) {
   const im = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), defs.length);
   const m4 = new THREE.Matrix4();
@@ -732,6 +729,206 @@ for (let i = 0; i < NC; i++) {
 confI.frustumCulled = false;
 scene.add(confI);
 
+// ---------- Große Welt drumherum (Stadtviertel, Park mit See, Hügel, Skyline) ----------
+// Fassaden-Textur mit Fenstern; nachts leuchten sie über die emissiveMap
+const facadeTex = canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = "#ffffff";
+  g.fillRect(0, 0, w, h);
+  for (let y = 0; y < 4; y++)
+    for (let x = 0; x < 4; x++) {
+      g.fillStyle = "#4d5866";
+      g.fillRect(x * 32 + 9, y * 32 + 8, 14, 18);
+    }
+});
+facadeTex.colorSpace = THREE.SRGBColorSpace;
+facadeTex.wrapS = facadeTex.wrapT = THREE.RepeatWrapping;
+const lightTex = canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = "#000000";
+  g.fillRect(0, 0, w, h);
+  const r = mulberry32(5);
+  for (let y = 0; y < 4; y++)
+    for (let x = 0; x < 4; x++) {
+      if (r() < 0.55) {
+        g.fillStyle = r() < 0.5 ? "#ffcf80" : "#ffe2a8";
+        g.fillRect(x * 32 + 9, y * 32 + 8, 14, 18);
+      }
+    }
+});
+lightTex.wrapS = lightTex.wrapT = THREE.RepeatWrapping;
+const cityMats = [];
+const roofMat = std("#6f6a64");
+function cityBuilding(x, z, w, d, h, color) {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, map: facadeTex.clone(), emissiveMap: lightTex.clone(), emissive: new THREE.Color("#ffd28a"), emissiveIntensity: 0 });
+  mat.map.repeat.set(Math.max(1, Math.round(w / 3.2)), Math.max(1, Math.round(h / 3.2)));
+  mat.emissiveMap.repeat.copy(mat.map.repeat);
+  mat.map.needsUpdate = mat.emissiveMap.needsUpdate = true;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [mat, mat, roofMat, roofMat, mat, mat]);
+  m.position.set(x, h / 2, z);
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+  cityMats.push(mat);
+  return m;
+}
+const cityCols = ["#d9c3a5", "#c97b5d", "#9fb19a", "#e3d6bf", "#8aa0b4", "#d7a77a", "#b8b2a6", "#c9a98a", "#a9b4bf"];
+// Straßenraster links und rechts vom Platz
+const asph = std("#4a4c52", { roughness: 0.95 });
+for (const rx of [-22, 22, -48, 48]) {
+  const r = new THREE.Mesh(new THREE.PlaneGeometry(8, 240), asph);
+  r.rotation.x = -Math.PI / 2;
+  r.position.set(rx, 0.012, -40);
+  r.receiveShadow = true;
+  scene.add(r);
+}
+for (const rz of [30, -24]) {
+  const r = new THREE.Mesh(new THREE.PlaneGeometry(240, 8), asph);
+  r.rotation.x = -Math.PI / 2;
+  r.position.set(0, 0.011, rz);
+  r.receiveShadow = true;
+  scene.add(r);
+}
+const blocks = [
+  [-44, -26.5, -20, 26], [26.5, 44, -20, 26], [-80, -52.5, -20, 26], [52.5, 80, -20, 26],
+  [-44, -26.5, 34, 70], [26.5, 44, 34, 70], [-80, -52.5, 34, 70], [52.5, 80, 34, 70],
+  [-80, -52.5, -110, -28], [52.5, 80, -110, -28], [-44, -26.5, -110, -60], [26.5, 44, -110, -60],
+];
+for (const [x0, x1, z0, z1] of blocks) {
+  for (let z = z0 + 4; z < z1 - 3; z += R(8, 11))
+    for (let x = x0 + 4; x < x1 - 3; x += R(8, 10)) {
+      const w = R(6, 8.5), d = R(6, 9), h = R(9, 24);
+      cityBuilding(x, z, w, d, h, pick(cityCols));
+    }
+}
+// Park hinter dem Rathaus mit See
+const grass = new THREE.Mesh(new THREE.PlaneGeometry(74, 70), std("#6f9a4e", { roughness: 1 }));
+grass.rotation.x = -Math.PI / 2;
+grass.position.set(0, 0.015, -63);
+grass.receiveShadow = true;
+scene.add(grass);
+const lake = new THREE.Mesh(new THREE.CircleGeometry(1, 48), new THREE.MeshStandardMaterial({ color: "#3f6f8a", roughness: 0.06, metalness: 0.2, envMapIntensity: 1.6 }));
+lake.rotation.x = -Math.PI / 2;
+lake.scale.set(22, 13, 1);
+lake.position.set(-4, 0.03, -66);
+scene.add(lake);
+// Wege im Park
+for (const [x, z, w, d, r] of [[0, -40, 3, 30, 0], [-4, -48, 46, 2.4, 0.08], [10, -84, 40, 2.4, -0.1]]) {
+  const pth = new THREE.Mesh(new THREE.PlaneGeometry(w, d), std("#d8cdb5"));
+  pth.rotation.set(-Math.PI / 2, 0, r);
+  pth.position.set(x, 0.02, z);
+  pth.receiveShadow = true;
+  scene.add(pth);
+}
+// Hügel und Skyline in der Ferne
+{
+  const geo = new THREE.PlaneGeometry(700, 220, 140, 44);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i);
+    const hgt = (Math.sin(x * 0.012) * 0.5 + 0.5) * 24 + Math.sin(x * 0.035 + 1.3) * 6 + Math.sin(x * 0.07) * 2.5;
+    const fall = Math.min(1, Math.max(0, (y + 110) / 120));
+    pos.setZ(i, Math.max(0, hgt * fall));
+  }
+  geo.computeVertexNormals();
+  const hills = new THREE.Mesh(geo, std("#7e9a5c", { roughness: 1 }));
+  hills.rotation.x = -Math.PI / 2;
+  hills.position.set(0, 0, -230);
+  hills.receiveShadow = true;
+  scene.add(hills);
+}
+for (let i = 0; i < 18; i++) {
+  const x = R(-60, 60), w = R(8, 14), h = R(40, 95);
+  cityBuilding(x, R(-260, -300), w, w, h, pick(["#9aa3ad", "#a8adb3", "#8d97a3", "#b3b0a8"]));
+}
+// Grünstreifen vor dem Platz (füllt den unteren Bildrand)
+{
+  const g2 = new THREE.Mesh(new THREE.PlaneGeometry(120, 9.5), std("#76a052", { roughness: 1 }));
+  g2.rotation.x = -Math.PI / 2;
+  g2.position.set(0, 0.02, 21.2);
+  g2.receiveShadow = true;
+  scene.add(g2);
+  const pathF = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 9.5), std("#d8cdb5"));
+  pathF.rotation.x = -Math.PI / 2;
+  pathF.position.set(0, 0.03, 21.2);
+  scene.add(pathF);
+  for (let x = -40; x <= 40; x += 6.5) {
+    if (Math.abs(x) < 3) continue;
+    box(5.2, 0.8, 0.9, std("#4f7d3a"), x, 0.4, 17.4); // Hecke
+    const bed = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.3, 16), std("#8a5a3a"));
+    bed.position.set(x + 1.2, 0.15, 21.5);
+    scene.add(bed);
+    for (let k = 0; k < 7; k++) {
+      const f = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), std(pick(["#e04f3c", "#f2c230", "#e86a9a", "#ffffff", "#9a7bff"])));
+      f.position.set(x + 1.2 + Math.cos(k) * 0.6, 0.42, 21.5 + Math.sin(k) * 0.6);
+      scene.add(f);
+    }
+  }
+}
+// Bäume als Instanzen: Park, Straßen, Hügel
+const treeSpots = [];
+for (let x = -46; x <= 46; x += 5.5) if (Math.abs(x) > 4) for (const z of [19.6, 24.8]) treeSpots.push([x + R(-0.5, 0.5), z + R(-0.4, 0.4), R(0.9, 1.25)]);
+for (let i = 0; i < 380; i++) {
+  const x = R(-36, 36), z = R(-97, -30);
+  const dl = ((x + 4) / 24) ** 2 + ((z + 66) / 15) ** 2;
+  if (dl < 1.05) continue;
+  if (Math.abs(x) < 2.5 && z > -56) continue;
+  treeSpots.push([x, z, R(0.8, 1.4)]);
+}
+for (let z = -18; z < 70; z += 6) for (const x of [-17.5, 17.5, -26.5, 26.5]) treeSpots.push([x + R(-0.4, 0.4), z, R(0.8, 1.1)]);
+for (let x = -110; x < 110; x += 5) for (const z of [26, 34]) if (Math.abs(x) > 18) treeSpots.push([x, z + R(-0.4, 0.4), R(0.8, 1.1)]);
+for (let i = 0; i < 900; i++) treeSpots.push([R(-330, 330), R(-215, -150), R(1.5, 2.6)]);
+const trunkI = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.15, 0.22, 2.4, 6), std("#6b4a35"), treeSpots.length);
+const crownI = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1.5, 1), std("#ffffff", { flatShading: true }), treeSpots.length);
+{
+  const m = new THREE.Matrix4(), qq = new THREE.Quaternion();
+  const greens = ["#4f7d3a", "#5f8f45", "#6a9a4a", "#426b30", "#7aa354", "#58813f"];
+  treeSpots.forEach(([x, z, s], i) => {
+    m.compose(new THREE.Vector3(x, 1.2 * s, z), qq, new THREE.Vector3(s, s, s));
+    trunkI.setMatrixAt(i, m);
+    m.compose(new THREE.Vector3(x, (2.9 + R(-0.2, 0.3)) * s, z), qq.setFromEuler(new THREE.Euler(0, R(0, 6), 0)), new THREE.Vector3(s * R(0.9, 1.15), s * R(0.95, 1.3), s * R(0.9, 1.15)));
+    crownI.setMatrixAt(i, m);
+    crownI.setColorAt(i, col(pick(greens)));
+  });
+  qq.identity();
+}
+trunkI.castShadow = crownI.castShadow = true;
+trunkI.receiveShadow = crownI.receiveShadow = true;
+scene.add(trunkI, crownI);
+// Laternen und Bänke entlang des Platzes
+for (let x = -14; x <= 14; x += 7) {
+  const bench = box(1.8, 0.45, 0.5, std("#7a5a3a"), x + 2.5, 0.42, 15.2);
+  bench.castShadow = true;
+}
+
+// Umgebungslicht/Spiegelungen aus einem eigenen Himmel (für See, Autos, Glas)
+{
+  const envScene = new THREE.Scene();
+  const envSky = new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
+    fragmentShader: `varying vec3 vP; void main(){ float h = smoothstep(-0.1, 0.6, vP.y);
+      vec3 c = mix(vec3(0.55,0.58,0.55), mix(vec3(1.0,0.92,0.82), vec3(0.45,0.62,0.9), h), step(-0.02, vP.y));
+      gl_FragColor = vec4(c, 1.0); }`,
+  }));
+  envScene.add(envSky);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(envScene, 0.02).texture;
+  scene.environmentIntensity = 0.45;
+}
+
+// ---------- Nachbearbeitung: Umgebungsverdeckung (GTAO), Leuchten (Bloom), Tonemapping ----------
+const composer = new EffectComposer(renderer);
+composer.setPixelRatio(SS);
+composer.setSize(W, H);
+composer.addPass(new RenderPass(scene, camera));
+const gtao = new GTAOPass(scene, camera, W, H);
+gtao.output = GTAOPass.OUTPUT.Default;
+gtao.blendIntensity = 0.9;
+gtao.updateGtaoMaterial({ radius: 1.6, distanceExponent: 1.4, thickness: 2, scale: 1.2, samples: 12, distanceFallOff: 1, screenSpaceRadius: false });
+gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, radiusExponent: 1, rings: 2, samples: 12 });
+composer.addPass(gtao);
+const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.35, 0.55, 0.88);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
 // ---------- Lichtstimmungen ----------
 const looks = {
   morning: { top: "#7fa5d6", bottom: "#ffd2a1", fog: "#f5cfa6", hemiSky: "#ffe9cf", hemiGround: "#6b5a4a", hemi: 1.1, sun: "#ffcf96", sunI: 2.6, sunPos: [-28, 22, 18] },
@@ -768,13 +965,17 @@ function lookAt(t) {
 
 // ---------- Kamera ----------
 const camKeys = [
-  { t: 0, p: [1.6, 11.0, 24.0], l: [0.4, 5.0, -6] },
-  { t: T.trauer, p: [1.0, 10.4, 22.4], l: [0.4, 4.4, -4] },
-  { t: T.bau, p: [4.2, 10.4, 21.5], l: [6.0, 5.6, -6] },
-  { t: T.parlament, p: [0.8, 10.6, 22.2], l: [0.4, 4.8, -6] },
-  { t: T.labor, p: [1.6, 10.8, 22.6], l: [2.4, 6.4, -6] },
-  { t: T.kind, p: [1.4, 9.8, 22.0], l: [0.8, 3.6, 2] },
-  { t: T.end, p: [1.4, 4.4, 18.6], l: [0.9, 2.9, 11.8] },
+  { t: 0, p: [4, 30, 54], l: [0, 0, -22] },
+  { t: T.schock, p: [3, 27, 49], l: [0, 0, -18] },
+  { t: T.trauer, p: [1.5, 17, 33], l: [0, 0, 0] },
+  { t: T.weiter, p: [3, 26, 48], l: [0, 0, -20] },
+  { t: T.bau, p: [10, 26, 47], l: [7, 4, -18] },
+  { t: T.nacht, p: [2, 22, 42], l: [0, 0, -12] },
+  { t: T.parlament, p: [2, 22, 40], l: [0, 1, -16] },
+  { t: T.stadt, p: [4, 30, 54], l: [0, 0, -20] },
+  { t: T.labor, p: [10, 24, 44], l: [7, 6, -18] },
+  { t: T.kind, p: [2, 20, 38], l: [0.6, 0, 2] },
+  { t: T.end, p: [1.6, 5.6, 21.5], l: [0.9, 2.6, 11.8] },
 ];
 const vA = new THREE.Vector3();
 function cameraAt(t) {
@@ -817,8 +1018,7 @@ function render(t) {
   };
   winDefs.forEach((d, i) => winMesh.setColorAt(i, winCol(d)));
   winMesh.instanceColor.needsUpdate = true;
-  skylineWins.forEach((d, i) => skyWinMesh.setColorAt(i, winCol(d)));
-  skyWinMesh.instanceColor.needsUpdate = true;
+
   lampHeads.forEach((h) => h.material.color.set(L.night > 0.5 ? "#ffd59a" : "#3a3a3a"));
   pools.forEach((pl) => (pl.material.opacity = L.night * 0.8));
 
@@ -969,7 +1169,11 @@ function render(t) {
   });
   confI.instanceMatrix.needsUpdate = true;
 
-  renderer.render(scene, camera);
+  // Stadtviertel: Fenster leuchten nachts, Umgebungslicht nachts schwächer
+  cityMats.forEach((m) => (m.emissiveIntensity = L.night * 1.4));
+  scene.environmentIntensity = lerp(0.45, 0.12, L.night);
+  bloom.strength = lerp(0.25, 0.7, L.night);
+  composer.render();
 }
 
 // ---------- an HyperFrames anschließen ----------
