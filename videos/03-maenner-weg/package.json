@@ -1,0 +1,10 @@
+{
+  "name": "maenner-weg",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.8.197 preview",
+    "check": "npx --yes hyperframes@0.8.197 check",
+    "render": "npx --yes hyperframes@0.8.197 render -o renders/maenner-weg.mp4"
+  }
+}

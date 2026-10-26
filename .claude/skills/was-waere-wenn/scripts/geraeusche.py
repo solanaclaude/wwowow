@@ -406,3 +406,46 @@ def flip(seed=0):
         c = bp(white(L, 140 + seed * 10 + k), 1200, 5000) * np.exp(-t_axis(L) * 160)
         out = place(out, stereo(c * r.uniform(0.6, 1.0)), k * 0.035)
     return out
+
+
+# ---------- weitere Bausteine (ab Video 3) ----------
+def clank(seed=0):
+    """Metallischer Schlag auf der Baustelle."""
+    r = rng(300 + seed)
+    tt = t_axis(0.6)
+    f = r.uniform(900, 1500)
+    x = sum(a * np.sin(2 * np.pi * f * m * tt) * np.exp(-tt * d) for m, a, d in [(1, 1, 9), (2.76, 0.6, 14), (5.4, 0.3, 20)])
+    x += bp(white(0.6, 310 + seed), 1500, 6000) * np.exp(-tt * 60) * 0.8
+    return reverb(stereo(x * 0.5, r.uniform(0.2, 0.8)), 1.1, 0.3)
+
+
+def footsteps(dur, rate=1.9, seed=320):
+    r = rng(seed)
+    out = silence(dur)
+    t0 = 0.1
+    k = 0
+    while t0 < dur:
+        L = 0.08
+        s = bp(white(L, seed + k), 300, 3000) * np.exp(-t_axis(L) * 70)
+        out = place(out, stereo(s * r.uniform(0.6, 1.0), -0.2 + 0.4 * (k % 2)), t0)
+        t0 += 1 / rate * r.uniform(0.95, 1.05)
+        k += 1
+    return reverb(out, 1.4, 0.3)
+
+
+def bike_bell():
+    return bell(0.9, 2100, seed=5) * 0.6
+
+
+def kids(dur, seed=330):
+    """Spielende Kinder: hohe, lebhafte Stimmen."""
+    r = rng(seed)
+    out = np.zeros((int(dur * SR), 2))
+    for v in range(7):
+        nz = white(dur, seed + v)
+        f1, f2 = r.uniform(800, 1300), r.uniform(2000, 3200)
+        voice = bp(nz, f1 * 0.85, f1 * 1.15, 2) + 0.7 * bp(nz, f2 * 0.88, f2 * 1.12, 2)
+        syll = smooth_rand(dur, r.uniform(9, 13), seed + 50 + v) ** 2
+        phrase = lp((smooth_rand(dur, 0.9, seed + 80 + v) > 0.5).astype(float), 8, 2)
+        out += stereo(voice * syll * phrase, r.uniform(-0.8, 0.8))
+    return reverb(out, 1.2, 0.35)

@@ -1,0 +1,60 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+      background: #131313;
+    }
+    #ab-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 700px;
+      text-align: center;
+      color: #f2f2f2;
+    }
+    #ab-frage {
+      font-family: "EB Garamond", serif;
+      font-size: 60px;
+      line-height: 1.15;
+    }
+    .ab-mono {
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: 0.08em;
+      line-height: 1.6;
+      text-transform: uppercase;
+    }
+    #ab-fakt {
+      margin-top: 36px;
+      opacity: 0.85;
+      font-weight: 400;
+    }
+    #ab-pfeil {
+      margin: 40px auto 26px;
+      width: 64px;
+      height: 64px;
+    }
+    #ab-share span {
+      border-bottom: 3px solid #f2f2f2;
+      padding-bottom: 2px;
+    }
+  </style>
+  <div id="root" data-composition-id="abspann" data-width="1080" data-height="1920">
+    <div id="ab-wrap" class="clip" data-start="0" data-duration="4">
+      <div id="ab-frage">Was wäre, wenn alle Männer<br />verschwinden würden?</div>
+      <div id="ab-fakt" class="ab-mono">Frauen leisten weltweit<br />76 % der unbezahlten<br />Sorgearbeit.</div>
+      <svg id="ab-pfeil" viewBox="0 0 24 24" fill="#f2f2f2"><path d="M14 4l8 7.5-8 7.5v-4.5c-5.5 0-9.2 1.8-12 6 1-6 4.5-11 12-12z" /></svg>
+      <div id="ab-share" class="ab-mono"><span>Teile das mit einer Frau,</span><br /><span>die deine Welt bewegt.</span></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#ab-frage", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 0.15);
+    tl.fromTo("#ab-fakt", { opacity: 0 }, { opacity: 0.85, duration: 0.4, ease: "power2.out" }, 0.35);
+    tl.fromTo("#ab-pfeil", { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, 0.6);
+    tl.fromTo("#ab-share", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.7);
+    window.__timelines["abspann"] = tl;
+  </script>
+</template>

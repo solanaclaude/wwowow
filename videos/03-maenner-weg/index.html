@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="de" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      // Die 3D-Welt lädt als Modul; HyperFrames wartet auf dieses Versprechen.
+      window.__hf = window.__hf || {};
+      window.__hf.buildReady = window.__hf.buildReady || {};
+      window.__hf.buildReady.welt = new Promise((resolve) => (window.__weltReady = resolve));
+      window.addEventListener("hf-seek", (e) => (window.__weltLastSeek = e.detail.time));
+    </script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #111111;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: #111111;
+      }
+      #welt {
+        position: absolute;
+        inset: 0;
+      }
+      #welt-canvas {
+        width: 1080px;
+        height: 1920px;
+        display: block;
+      }
+      #vignette {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse 85% 70% at 50% 45%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.38) 100%),
+          linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 18%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.3) 44%, rgba(0, 0, 0, 0.34) 52%, rgba(0, 0, 0, 0.3) 66%, rgba(0, 0, 0, 0.12) 74%, rgba(0, 0, 0, 0.3) 100%);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="63"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- 3D-Welt (Three.js, gezeichnet aus der Zeit) -->
+      <div id="welt" class="clip" data-start="0" data-duration="59" data-track-index="0" style="z-index: 1">
+        <canvas id="welt-canvas" width="1080" height="1920"></canvas>
+      </div>
+      <div id="vignette" class="clip" data-start="0" data-duration="59" data-track-index="1" data-layout-ignore style="z-index: 2"></div>
+
+      <div
+        id="hook"
+        data-composition-id="hook"
+        data-composition-src="compositions/hook.html"
+        data-start="0"
+        data-duration="3.1"
+        data-track-index="2"
+        data-track-kind="graphics"
+        data-width="1080"
+        data-height="1920"
+        style="z-index: 3"
+      ></div>
+      <div
+        id="zaehler"
+        data-composition-id="zaehler"
+        data-composition-src="compositions/zaehler.html"
+        data-start="3"
+        data-duration="56"
+        data-track-index="3"
+        data-track-kind="graphics"
+        data-width="1080"
+        data-height="1920"
+        style="z-index: 4"
+      ></div>
+      <div
+        id="untertitel"
+        data-composition-id="untertitel"
+        data-composition-src="compositions/untertitel.html"
+        data-start="0"
+        data-duration="59"
+        data-track-index="4"
+        data-track-kind="captions"
+        data-width="1080"
+        data-height="1920"
+        style="z-index: 5"
+      ></div>
+      <div
+        id="abspann"
+        data-composition-id="abspann"
+        data-composition-src="compositions/abspann.html"
+        data-start="59"
+        data-duration="4"
+        data-track-index="5"
+        data-track-kind="graphics"
+        data-width="1080"
+        data-height="1920"
+        style="z-index: 6"
+      ></div>
+
+      <!-- Ton: Klangteppich, Umgebung pro Phase, Effekte auf sichtbaren Aktionen (erzeugt mit ton.py) -->
+      <audio id="ton-musik" class="clip" src="assets/audio/musik.mp3" data-start="0" data-duration="63" data-track-index="10" data-volume="0.22"></audio>
+      <audio id="ton-stadt" class="clip" src="assets/audio/stadt.mp3" data-start="0" data-duration="10" data-track-index="11" data-volume="0.8"></audio>
+      <audio id="ton-sparkle1" class="clip" src="assets/audio/sparkle.mp3" data-start="8.48" data-duration="1.8" data-track-index="12" data-volume="0.35"></audio>
+      <audio id="ton-sparkle2" class="clip" src="assets/audio/sparkle.mp3" data-start="9.05" data-duration="1.8" data-track-index="13" data-volume="0.25"></audio>
+      <audio id="ton-stille" class="clip" src="assets/audio/stille.mp3" data-start="9" data-duration="6" data-track-index="14" data-volume="0.55"></audio>
+      <audio id="ton-trauer" class="clip" src="assets/audio/trauer.mp3" data-start="15" data-duration="4" data-track-index="15" data-volume="0.55"></audio>
+      <audio id="ton-weiter" class="clip" src="assets/audio/weiter.mp3" data-start="19" data-duration="4" data-track-index="16" data-volume="0.6"></audio>
+      <audio id="ton-bau" class="clip" src="assets/audio/bau.mp3" data-start="23" data-duration="4" data-track-index="17" data-volume="0.6"></audio>
+      <audio id="ton-nacht" class="clip" src="assets/audio/nacht.mp3" data-start="27" data-duration="4" data-track-index="18" data-volume="0.55"></audio>
+      <audio id="ton-jubel" class="clip" src="assets/audio/jubel.mp3" data-start="31" data-duration="4" data-track-index="19" data-volume="0.8"></audio>
+      <audio id="ton-pop" class="clip" src="assets/audio/pop.mp3" data-start="31.2" data-duration="0.3" data-track-index="20" data-volume="0.5"></audio>
+      <audio id="ton-stadt2" class="clip" src="assets/audio/stadt2.mp3" data-start="35" data-duration="8" data-track-index="21" data-volume="0.6"></audio>
+      <audio id="ton-labor" class="clip" src="assets/audio/labor.mp3" data-start="43" data-duration="8" data-track-index="22" data-volume="0.45"></audio>
+      <audio id="ton-kind" class="clip" src="assets/audio/kind.mp3" data-start="51" data-duration="8" data-track-index="23" data-volume="0.75"></audio>
+      <audio id="ton-chime" class="clip" src="assets/audio/chime.mp3" data-start="50.85" data-duration="2.4" data-track-index="24" data-volume="0.9"></audio>
+      <audio id="ton-abspann" class="clip" src="assets/audio/whoosh-short.mp3" data-start="58.85" data-duration="0.6" data-track-index="25" data-volume="0.6"></audio>
+    </div>
+    <script type="module" src="assets/welt.js"></script>
+    <script id="zaehler-uhr">
+      // Zähler "Menschen bei der Arbeit": reine Funktion der Video-Zeit t (Sekunden)
+      (function () {
+        // Abschnitte: [von, bis, Bezeichnung, Startwert, Endwert, Einheit]; dazwischen weich interpoliert
+        const segs = [
+          [3, 8.5, "Weltbevölkerung", 8231402117, 8231402180, ""],
+          [8.5, 27, "Weltbevölkerung", 8231402180, 4091226540, "", 8.5, 9.9],
+          [27, 31, "Morde pro Jahr · weltweit", 458000, 45800, ""],
+          [31, 35, "Frauen in Parlamenten", 27, 100, " %"],
+          [35, 39, "Frauen in Führungspositionen", 28, 100, " %"],
+          [39, 43, "Lohnlücke · Deutschland", 16, 0, " %"],
+          [43, 51, "Versuche im Labor", 1, 4611, ""],
+          [51, 59, "Weltbevölkerung", 3752381904, 3752381904, ""],
+        ];
+        const days = [
+          [0, "Dienstag · 09:13 Uhr"], [8.5, "Dienstag · 09:14 Uhr"], [11, "Dienstag · 09:20 Uhr"],
+          [15, "Tag 1"], [19, "Tag 3"], [23, "Woche 2"], [27, "Monat 1"], [31, "Monat 3"],
+          [35, "Jahr 1"], [39, "Jahr 3"], [43, "Jahr 5"], [47, "Jahr 8"], [51, "Jahr 12"],
+        ];
+        function seg(t) {
+          for (const sg of segs) if (t < sg[1]) return sg;
+          return segs[segs.length - 1];
+        }
+        function value(t) {
+          const [a, b, , v0, v1, , ra, rb] = seg(t);
+          const u = Math.min(1, Math.max(0, (t - (ra ?? a)) / ((rb ?? b) - (ra ?? a))));
+          const e = u * u * (3 - 2 * u);
+          let v = v0 + (v1 - v0) * e;
+          if (t >= 53.2 && t < 59) v += 1; // das erste Kind mit zwei Müttern
+          return v;
+        }
+        function draw(t) {
+          const num = document.getElementById("z-num");
+          const sub = document.getElementById("z-sub");
+          if (!num || !sub) return;
+          const sg = seg(t);
+          num.textContent = Math.round(value(t)).toLocaleString("de-DE") + sg[5];
+          const lab = document.getElementById("z-label");
+          if (lab) lab.textContent = sg[2];
+          // beim Wechsel der Bezeichnung kurz ein- und ausblenden
+          const since = t - sg[0], until = sg[1] - t;
+          const op = sg[0] > 3 && since < 0.3 ? since / 0.3 : 1;
+          for (const el of [lab, num]) if (el) el.style.opacity = String(Math.min(op, segs.indexOf(sg) < segs.length - 1 && until < 0.15 && segs[segs.indexOf(sg) + 1][2] !== sg[2] ? until / 0.15 : 1));
+          let s = days[0][1];
+          for (const [at, label] of days) if (t >= at) s = label;
+          sub.textContent = s;
+        }
+        window.addEventListener("hf-seek", (e) => draw(e.detail.time));
+      })();
+    </script>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

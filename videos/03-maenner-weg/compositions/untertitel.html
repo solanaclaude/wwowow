@@ -1,0 +1,69 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .ut {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 1150px;
+      text-align: center;
+      overflow: visible;
+    }
+    .ut span {
+      display: inline-block;
+      max-width: 860px;
+      font-family: "EB Garamond", serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 48px;
+      line-height: 1.22;
+      color: #ffffff;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+  </style>
+  <div id="root" data-composition-id="untertitel" data-width="1080" data-height="1920">
+    <div id="ut1" class="ut clip" data-start="3.1" data-duration="3.7"><span>Ein ganz normaler<br />Dienstagmorgen.</span></div>
+    <div id="ut2" class="ut clip" data-start="7.1" data-duration="3.7"><span>Um 9:14 Uhr verschwinden<br />alle Männer.</span></div>
+    <div id="ut3" class="ut clip" data-start="11.1" data-duration="3.7"><span>Rund 4,1 Milliarden Menschen.<br />Einfach weg.</span></div>
+    <div id="ut4" class="ut clip" data-start="15.1" data-duration="3.7"><span>Sie verlieren Väter, Brüder,<br />Söhne, Partner, Freunde.</span></div>
+    <div id="ut5" class="ut clip" data-start="19.1" data-duration="3.7"><span>Und dann<br />machen sie weiter.</span></div>
+    <div id="ut6" class="ut clip" data-start="23.1" data-duration="3.7"><span>Sie übernehmen jeden Job,<br />der fehlt.</span></div>
+    <div id="ut7" class="ut clip" data-start="27.1" data-duration="1.85"><span>Rund 90 % aller Morde<br />begingen Männer.</span></div>
+    <div id="ut8" class="ut clip" data-start="29.0" data-duration="1.85"><span>Nachts allein nach Hause?<br />Endlich ohne Angst.</span></div>
+    <div id="ut9" class="ut clip" data-start="31.1" data-duration="3.7"><span>Zum ersten Mal: Jedes Parlament<br />ist zu 100 % weiblich.</span></div>
+    <div id="ut10" class="ut clip" data-start="35.1" data-duration="3.7"><span>Sie bauen Städte,<br />in denen man gern lebt.</span></div>
+    <div id="ut11" class="ut clip" data-start="39.1" data-duration="3.7"><span>Gleiche Arbeit, gleicher Lohn.<br />Endlich.</span></div>
+    <div id="ut12" class="ut clip" data-start="43.1" data-duration="3.7"><span>Nur ein Problem bleibt:<br />Es kommen keine Kinder mehr.</span></div>
+    <div id="ut13" class="ut clip" data-start="47.1" data-duration="3.7"><span>Schon 2004 kam in Japan eine Maus<br />mit zwei Müttern zur Welt.</span></div>
+    <div id="ut14" class="ut clip" data-start="51.1" data-duration="3.7"><span>Jahr 12: das erste Kind<br />mit zwei Müttern.</span></div>
+    <div id="ut15" class="ut clip" data-start="55.1" data-duration="3.7"><span>Die Zukunft liegt<br />in ihren Händen.</span></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const groups = [
+      ["#ut1 span", 3.1, 3.7],
+      ["#ut2 span", 7.1, 3.7],
+      ["#ut3 span", 11.1, 3.7],
+      ["#ut4 span", 15.1, 3.7],
+      ["#ut5 span", 19.1, 3.7],
+      ["#ut6 span", 23.1, 3.7],
+      ["#ut7 span", 27.1, 1.85],
+      ["#ut8 span", 29.0, 1.85],
+      ["#ut9 span", 31.1, 3.7],
+      ["#ut10 span", 35.1, 3.7],
+      ["#ut11 span", 39.1, 3.7],
+      ["#ut12 span", 43.1, 3.7],
+      ["#ut13 span", 47.1, 3.7],
+      ["#ut14 span", 51.1, 3.7],
+      ["#ut15 span", 55.1, 3.7],
+    ];
+    for (const [sel, start, dur] of groups) {
+      tl.fromTo(sel, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, start);
+      tl.to(sel, { opacity: 0, duration: 0.25, ease: "power2.in" }, start + dur - 0.27);
+    }
+    window.__timelines["untertitel"] = tl;
+  </script>
+</template>
